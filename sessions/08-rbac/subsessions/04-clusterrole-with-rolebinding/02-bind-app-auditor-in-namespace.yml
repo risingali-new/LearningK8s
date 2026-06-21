@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-auditor-workload-viewer
+  namespace: rbac-lab
+  labels:
+    training-session: rbac
+subjects:
+  - kind: ServiceAccount
+    name: app-auditor
+    namespace: rbac-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: workload-viewer
