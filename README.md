@@ -119,6 +119,7 @@ sessions/03-ingress/README.md
 sessions/04-hpa-vpa/README.md
 sessions/05-production-scaling/README.md
 sessions/06-daemonsets/README.md
+sessions/07-argocd/README.md
 ```
 
 Session 01 covers core Kubernetes objects:
@@ -194,6 +195,19 @@ kubectl apply -f subsessions/01-prerequisites-and-namespace/
 kubectl apply -f subsessions/02-daemonset-basics/
 kubectl apply -f subsessions/03-deployment-and-daemonset-mix/
 ```
+
+Session 07 covers Argo CD and the GitOps deployment workflow:
+
+```bash
+cd sessions/07-argocd
+kubectl apply -f subsessions/01-prerequisites-and-install/01-argocd-namespace.yml
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+After the Argo CD Pods are ready, create a GitHub repository with the sample
+Kubernetes YAML from `sessions/07-argocd/subsessions/02-create-github-repository/`,
+create a small Argo CD project boundary, and create the application from the
+Argo CD UI. The cluster needs outbound access to GitHub for this session.
 
 ## Delete The EKS Cluster
 
