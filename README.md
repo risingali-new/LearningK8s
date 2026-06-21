@@ -120,6 +120,7 @@ sessions/04-hpa-vpa/README.md
 sessions/05-production-scaling/README.md
 sessions/06-daemonsets/README.md
 sessions/07-argocd/README.md
+sessions/08-rbac/README.md
 ```
 
 Session 01 covers core Kubernetes objects:
@@ -143,7 +144,13 @@ kubectl apply -f subsessions/06-postgres-statefulset/
 kubectl apply -f subsessions/04-flask-with-persistent-db/
 ```
 
-Session 03 covers Ingress routing to a frontend, user-service, and app-service:
+Session 03 covers Ingress routing to a frontend, user-service, and app-service.
+The default path uses the AWS Load Balancer Controller with
+`ingressClassName: alb`. Optional controller-specific sub-sessions are available
+for F5 NGINX, Traefik, HAProxy, Contour, Istio, and Cilium under
+`sessions/03-ingress/subsessions/`. Each controller sub-session includes install
+commands for creating a cloud `LoadBalancer` entry point and testing the
+load-balancer DNS.
 
 ```bash
 cd sessions/03-ingress
@@ -168,7 +175,9 @@ kubectl apply -f subsessions/02-hpa-cpu-autoscaling/03-load-generator.yml
 For the dynamic EBS StorageClass examples in Sessions 02-03, the cluster needs
 the Amazon EBS CSI driver installed. For Session 03 on EKS, the cluster also
 needs the AWS Load Balancer Controller installed because the Ingress uses
-`ingressClassName: alb`.
+`ingressClassName: alb` by default. If you choose an optional Ingress controller
+path, install that controller and confirm the expected `IngressClass` exists
+before applying its optional manifest.
 
 For Session 04, the cluster needs Metrics Server for HPA and VPA resource
 metrics. VPA is installed separately before running the VPA sub-session.
@@ -208,6 +217,23 @@ After the Argo CD Pods are ready, create a GitHub repository with the sample
 Kubernetes YAML from `sessions/07-argocd/subsessions/02-create-github-repository/`,
 create a small Argo CD project boundary, and create the application from the
 Argo CD UI. The cluster needs outbound access to GitHub for this session.
+
+Session 08 covers Kubernetes RBAC, including ServiceAccounts, Roles,
+RoleBindings, ClusterRoles, ClusterRoleBindings, and `kubectl auth can-i`
+permission checks:
+
+```bash
+cd sessions/08-rbac
+kubectl apply -f subsessions/01-prerequisites-and-namespace/
+kubectl apply -f subsessions/02-service-accounts-and-deny-by-default/
+kubectl apply -f subsessions/03-namespace-role-and-rolebinding/
+kubectl apply -f subsessions/04-clusterrole-with-rolebinding/
+kubectl apply -f subsessions/05-clusterrolebinding-for-cluster-scope/
+```
+
+This session uses ServiceAccount impersonation checks such as
+`kubectl auth can-i --as=system:serviceaccount:rbac-lab:dev-reader` to show
+exactly which permissions were granted and which permissions remain denied.
 
 ## Delete The EKS Cluster
 
