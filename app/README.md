@@ -30,10 +30,10 @@ Ingress /api/apps  -> app-service
 
 | File | Purpose | Port |
 | --- | --- | --- |
-| `app/app.py` | Original monolith used by Sessions 01 and 02. | `5000` |
-| `frontend/frontend.py` | Browser UI used by Session 03. | `5000` |
-| `user-service/user_service.py` | User API used by Session 03. | `5001` |
-| `app-service/app_service.py` | Message/application API used by Session 03. | `5002` |
+| `app/app.py` | Original monolith used by Sessions 02 and 07. | `5000` |
+| `frontend/frontend.py` | Browser UI used by Session 08. | `5000` |
+| `user-service/user_service.py` | User API used by Session 08. | `5001` |
+| `app-service/app_service.py` | Message/application API used by Session 08. | `5002` |
 
 ## Folder Structure
 
@@ -61,7 +61,7 @@ app/
     requirements.txt
     static/
     templates/
-  Dockerfile              # legacy monolith image for Sessions 01 and 02
+  Dockerfile              # legacy monolith image for Sessions 02 and 07
   docker-compose.yml
 ```
 
@@ -104,6 +104,7 @@ docker compose down -v
 ## Build The Service Images
 
 ```bash
+docker build -t prashantdey/appk8stutorial:1.0 .
 docker build -t prashantdey/appk8stutorial:user-svc-2.0 ./user-service
 docker build -t prashantdey/appk8stutorial:app-svc-2.0 ./app-service
 docker build -t prashantdey/appk8stutorial:frontend-svc-2.0 ./frontend
@@ -120,12 +121,13 @@ docker login
 Push the service image tags:
 
 ```bash
+docker push prashantdey/appk8stutorial:1.0
 docker push prashantdey/appk8stutorial:user-svc-2.0
 docker push prashantdey/appk8stutorial:app-svc-2.0
 docker push prashantdey/appk8stutorial:frontend-svc-2.0
 ```
 
-The Kubernetes Session 03 ingress manifests use these image names:
+The Kubernetes Session 08 ingress manifests use these image names:
 
 ```text
 prashantdey/appk8stutorial:user-svc-2.0
@@ -159,6 +161,7 @@ Health endpoints:
 
 - `/healthz`: process health check.
 - `/readyz`: database or downstream service readiness check.
+- `/metrics`: Prometheus text metrics used by the observability sessions.
 
 API endpoints:
 
@@ -176,8 +179,9 @@ Kubernetes examples for this app are kept in:
 ../sessions/
 ```
 
-Current sessions:
+Current sessions that introduce the app most directly:
 
-- `01-core-k8s`: Namespace, Pod, Deployment, Service, labels, selectors, and basic troubleshooting.
-- `02-storage-pv-pvc-statefulset`: PV, PVC, StorageClass, StatefulSet, and database persistence.
-- `03-ingress`: frontend, user-service, app-service, and Ingress path routing.
+- `sessions/02-core-k8s`: Namespace, Pod, Deployment, Service, labels, selectors, and basic troubleshooting.
+- `sessions/07-storage-pv-pvc-statefulset`: PV, PVC, StorageClass, StatefulSet, and database persistence.
+- `sessions/08-ingress-edge-routing`: frontend, user-service, app-service, and Ingress path routing.
+- `sessions/30-production-capstone`: production-style delivery of the complete app.

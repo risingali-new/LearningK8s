@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: batch-hello
+  namespace: daemonset-lab
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: batch-hello
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "job started"
+              date
+              echo "job completed"
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: message-board-environments
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            path: sessions/22-kustomize/subsessions/03-dev-overlay/overlays/dev
+          - env: prod
+            path: sessions/22-kustomize/subsessions/04-prod-overlay/overlays/prod
+  template:
+    metadata:
+      name: message-board-{{env}}
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/example/message-board-gitops.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: kustomize-lab

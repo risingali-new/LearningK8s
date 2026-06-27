@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: message-board
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/example/message-board-gitops.git
+    targetRevision: main
+    path: sessions/22-kustomize/subsessions/04-prod-overlay/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kustomize-lab
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

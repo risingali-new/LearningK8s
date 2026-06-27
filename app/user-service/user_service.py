@@ -1,5 +1,5 @@
 import psycopg2
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
 
 from database import count_users, create_user, ensure_schema, get_connection, list_users, serialize_row
 
@@ -56,6 +56,32 @@ def readyz():
         return jsonify(service="user-service", status="ready")
     except psycopg2.Error:
         return jsonify(service="user-service", status="not-ready"), 503
+
+
+@app.get("/metrics")
+def metrics():
+    database_available = 1
+    user_count = 0
+
+    try:
+        user_count = count_users()
+    except psycopg2.Error:
+        database_available = 0
+
+    body = "\n".join(
+        [
+            "# HELP message_board_service_info Service process information.",
+            "# TYPE message_board_service_info gauge",
+            'message_board_service_info{service="user-service"} 1',
+            "# HELP message_board_database_available Database readiness status.",
+            "# TYPE message_board_database_available gauge",
+            f'message_board_database_available{{service="user-service"}} {database_available}',
+            "# HELP message_board_users_current Current user count.",
+            "# TYPE message_board_users_current gauge",
+            f'message_board_users_current{{service="user-service"}} {user_count}',
+        ]
+    )
+    return Response(f"{body}\n", mimetype="text/plain; version=0.0.4")
 
 
 ensure_schema()

@@ -1,0 +1,6 @@
+resources:
+  - ../../02-create-base/base
+namePrefix: prod-
+patches:
+  - path: replica-patch.yaml
+  - path: resources-patch.yaml

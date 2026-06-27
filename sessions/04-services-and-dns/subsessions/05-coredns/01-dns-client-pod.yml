@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-client
+  namespace: services-lab
+spec:
+  restartPolicy: Never
+  containers:
+    - name: dns-client
+      image: busybox:1.36
+      command: ["sh", "-c", "nslookup message-board.services-lab.svc.cluster.local && wget -qO- http://message-board.services-lab.svc.cluster.local"]

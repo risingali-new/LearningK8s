@@ -1,7 +1,7 @@
 import os
 
 import requests
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, flash, jsonify, redirect, render_template, request, url_for
 
 
 REQUEST_TIMEOUT = 3
@@ -154,6 +154,18 @@ def readyz():
         return jsonify(service="frontend", status="ready")
     except requests.RequestException:
         return jsonify(service="frontend", status="not-ready"), 503
+
+
+@app.get("/metrics")
+def metrics():
+    body = "\n".join(
+        [
+            "# HELP message_board_service_info Service process information.",
+            "# TYPE message_board_service_info gauge",
+            'message_board_service_info{service="frontend"} 1',
+        ]
+    )
+    return Response(f"{body}\n", mimetype="text/plain; version=0.0.4")
 
 
 if __name__ == "__main__":

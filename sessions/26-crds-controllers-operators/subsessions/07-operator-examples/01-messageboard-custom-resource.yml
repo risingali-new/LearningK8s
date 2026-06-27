@@ -1,0 +1,8 @@
+apiVersion: training.example.com/v1alpha1
+kind: MessageBoard
+metadata:
+  name: message-board
+  namespace: default
+spec:
+  image: prashantdey/appk8stutorial:1.0
+  replicas: 2

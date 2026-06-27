@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: architecture-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board
+  namespace: architecture-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: message-board
+  template:
+    metadata:
+      labels:
+        app: message-board
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:1.0
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////tmp/messages.db
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: message-board
+  namespace: architecture-lab
+spec:
+  selector:
+    app: message-board
+  ports:
+    - port: 80
+      targetPort: 5000

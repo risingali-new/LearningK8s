@@ -1,0 +1,20 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-message-board-labels
+spec:
+  validationFailureAction: Audit
+  rules:
+    - name: require-owner-and-app
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+      validate:
+        message: "Deployments must include app.kubernetes.io/name and owner labels."
+        pattern:
+          metadata:
+            labels:
+              app.kubernetes.io/name: "?*"
+              owner: "?*"

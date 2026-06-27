@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: message-board-tls
+  namespace: gateway-lab
+spec:
+  secretName: message-board-tls
+  dnsNames:
+    - message-board.example.com
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

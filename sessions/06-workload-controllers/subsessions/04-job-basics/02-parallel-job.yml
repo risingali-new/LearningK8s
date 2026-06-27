@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: parallel-hello
+  namespace: daemonset-lab
+spec:
+  completions: 4
+  parallelism: 2
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: parallel-hello
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "parallel job pod: $HOSTNAME"
+              sleep 5
+              echo "done"
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

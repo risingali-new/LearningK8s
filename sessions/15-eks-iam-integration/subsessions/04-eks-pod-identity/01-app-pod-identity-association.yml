@@ -1,0 +1,8 @@
+apiVersion: eks.amazonaws.com/v1
+kind: PodIdentityAssociation
+metadata:
+  name: message-board-aws
+spec:
+  serviceAccountName: message-board-aws
+  namespace: iam-lab
+  roleArn: arn:aws:iam::<account-id>:role/MessageBoardAppRole

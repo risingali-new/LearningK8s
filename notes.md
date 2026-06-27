@@ -1,7 +1,13 @@
 ```sh
-eksctl create cluster --name demo-k8slearning  --region us-east-2 --nodegroup-name standard-workers --node-type t3.medium --nodes 2 --nodes-min 2 --nodes-max 3
+eksctl create cluster --name demo-k8slearning  --region us-east-2 --nodegroup-name standard-workers --node-type t3.medium --nodes 2 --nodes-min 2 --nodes-max 3 --node-ami-family=AmazonLinux2023 --version 1.36
 
 --version 1.36
+
+
+eksctl create nodegroup --cluster demo-k8slearning-b16pk --region us-east-2 --name standard-workers-al2023 --node-type t3.medium --nodes 2 --nodes-min 2 --nodes-max 3 --node-ami-family AmazonLinux2023
+
+eksctl delete nodegroup --cluster demo-k8slearning-b16pk --region us-east-2 --name standard-workers
+
 
 aws eks --region us-east-2 update-kubeconfig --name demo-k8slearning
 

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board
+  namespace: rollout-lab
+spec:
+  template:
+    metadata:
+      labels:
+        app: message-board
+        version: v2
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:1.0
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////tmp/messages.db
+            - name: RELEASE_VERSION
+              value: v2

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: services-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board
+  namespace: services-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: message-board
+  template:
+    metadata:
+      labels:
+        app: message-board
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:1.0
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////tmp/messages.db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: message-board
+  namespace: services-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: message-board
+  ports:
+    - port: 80
+      targetPort: 5000

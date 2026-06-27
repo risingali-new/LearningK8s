@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board-policy-demo
+  namespace: default
+  labels:
+    app.kubernetes.io/name: message-board
+    owner: platform-training
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-board-policy-demo
+  template:
+    metadata:
+      labels:
+        app: message-board-policy-demo
+        app.kubernetes.io/name: message-board
+        owner: platform-training
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:1.0
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////tmp/messages.db

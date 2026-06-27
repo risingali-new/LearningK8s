@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board
+  namespace: kustomize-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-board
+  template:
+    metadata:
+      labels:
+        app: message-board
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:1.0
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////tmp/messages.db
+          ports:
+            - containerPort: 5000

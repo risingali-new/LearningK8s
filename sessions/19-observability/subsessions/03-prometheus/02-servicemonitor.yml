@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: message-board
+  namespace: observability-lab
+spec:
+  selector:
+    matchLabels:
+      app: message-board
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

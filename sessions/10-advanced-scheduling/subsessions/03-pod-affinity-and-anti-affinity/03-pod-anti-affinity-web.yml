@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anti-affinity-web
+  namespace: scheduling-lab
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: anti-affinity-web
+  template:
+    metadata:
+      labels:
+        app: anti-affinity-web
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: anti-affinity-web
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

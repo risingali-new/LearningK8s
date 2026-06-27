@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-toleration-demo
+  namespace: scheduling-lab
+  labels:
+    app: no-toleration-demo
+spec:
+  nodeSelector:
+    training.k8s.io/node-role: scheduling-lab
+  containers:
+    - name: web
+      image: nginx:1.27-alpine
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi

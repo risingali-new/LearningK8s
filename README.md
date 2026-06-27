@@ -1,7 +1,8 @@
 # Kubernetes Training Notes
 
 This repository contains Kubernetes examples for Batch 16A, including simple root
-manifests and an incremental Flask/PostgreSQL learning app under `sessions/`.
+manifests, a Flask/PostgreSQL learning app under `app/`, and the ordered course
+labs under `sessions/`.
 
 ## Current EKS Version
 
@@ -110,146 +111,62 @@ kubectl delete -f namespace-pk.yml --ignore-not-found
 
 ## Run The Training Sessions
 
-Session guides are available in:
+Start with the roadmap:
 
 ```text
-sessions/01-core-k8s/README.md
-sessions/02-storage-pv-pvc-statefulset/README.md
-sessions/03-ingress/README.md
-sessions/04-hpa-vpa/README.md
-sessions/05-production-scaling/README.md
-sessions/06-daemonsets/README.md
-sessions/07-argocd/README.md
-sessions/08-rbac/README.md
-sessions/09-cni-networking/README.md
+sessions/00-prerequisites-and-roadmap/README.md
 ```
 
-Session 01 covers core Kubernetes objects:
+The repository is now organized as a 30-session Kubernetes path. Session 00 is
+the prerequisite and roadmap entry point; Sessions 01-30 are the teaching flow.
 
-```bash
-cd sessions/01-core-k8s
-kubectl apply -f subsessions/01-namespace/
-kubectl apply -f subsessions/02-configmap-secret/
-kubectl apply -f subsessions/03-postgres-deployment-service/
-kubectl apply -f subsessions/05-flask-deployment/
-kubectl apply -f subsessions/06-flask-services/01-flask-service-clusterip.yml
-```
+| Session | Topic | Guide |
+| --- | --- | --- |
+| 00 | Prerequisites and roadmap | `sessions/00-prerequisites-and-roadmap/README.md` |
+| 01 | Kubernetes architecture | `sessions/01-kubernetes-architecture/README.md` |
+| 02 | Core Kubernetes objects | `sessions/02-core-k8s/README.md` |
+| 03 | Configuration and Pod lifecycle | `sessions/03-configuration-and-pod-lifecycle/README.md` |
+| 04 | Services and DNS | `sessions/04-services-and-dns/README.md` |
+| 05 | Deployment operations | `sessions/05-deployment-operations/README.md` |
+| 06 | Workload controllers, Jobs, CronJobs, DaemonSets | `sessions/06-workload-controllers/README.md` |
+| 07 | Storage, PV, PVC, StatefulSet | `sessions/07-storage-pv-pvc-statefulset/README.md` |
+| 08 | Ingress and edge routing | `sessions/08-ingress-edge-routing/README.md` |
+| 09 | Gateway API and TLS | `sessions/09-gateway-api-and-tls/README.md` |
+| 10 | Advanced scheduling | `sessions/10-advanced-scheduling/README.md` |
+| 11 | Resource management and disruption safety | `sessions/11-resource-management/README.md` |
+| 12 | Pod autoscaling | `sessions/12-pod-autoscaling/README.md` |
+| 13 | Node autoscaling | `sessions/13-node-autoscaling/README.md` |
+| 14 | RBAC and identity | `sessions/14-rbac-and-identity/README.md` |
+| 15 | EKS IAM integration | `sessions/15-eks-iam-integration/README.md` |
+| 16 | Security hardening | `sessions/16-security-hardening/README.md` |
+| 17 | Secrets management | `sessions/17-secrets-management/README.md` |
+| 18 | CNI, networking, eBPF | `sessions/18-cni-networking/README.md` |
+| 19 | Observability | `sessions/19-observability/README.md` |
+| 20 | Troubleshooting | `sessions/20-troubleshooting/README.md` |
+| 21 | Helm | `sessions/21-helm/README.md` |
+| 22 | Kustomize | `sessions/22-kustomize/README.md` |
+| 23 | Argo CD and GitOps | `sessions/23-argocd-gitops/README.md` |
+| 24 | Advanced Argo CD | `sessions/24-advanced-argocd/README.md` |
+| 25 | Admission control and policy | `sessions/25-admission-control-and-policy/README.md` |
+| 26 | CRDs, controllers, operators | `sessions/26-crds-controllers-operators/README.md` |
+| 27 | Service mesh | `sessions/27-service-mesh/README.md` |
+| 28 | Cluster operations | `sessions/28-cluster-operations/README.md` |
+| 29 | Supply chain and CI/CD | `sessions/29-supply-chain-cicd/README.md` |
+| 30 | Production capstone | `sessions/30-production-capstone/README.md` |
 
-Session 02 covers persistent storage, PVs, PVCs, StorageClass, and StatefulSet:
+Each session now has an ordered guide, sub-session structure, and app-based lab
+examples where the topic can be demonstrated through the training application.
+Some advanced examples require installing their controller or CRD first, and
+cloud-specific examples include placeholder values that should be replaced for
+your own AWS account, domain, registry, or Git repository.
 
-```bash
-cd sessions/02-storage-pv-pvc-statefulset
-kubectl apply -f subsessions/01-storage-problem-and-shared-config/
-kubectl apply -f subsessions/05-storageclass/
-kubectl apply -f subsessions/06-postgres-statefulset/
-kubectl apply -f subsessions/04-flask-with-persistent-db/
-```
+Important provider prerequisites:
 
-Session 03 covers Ingress routing to a frontend, user-service, and app-service.
-The default path uses the AWS Load Balancer Controller with
-`ingressClassName: alb`. Optional controller-specific sub-sessions are available
-for F5 NGINX, Traefik, HAProxy, Contour, Istio, and Cilium under
-`sessions/03-ingress/subsessions/`. Each controller sub-session includes install
-commands for creating a cloud `LoadBalancer` entry point and testing the
-load-balancer DNS.
-
-```bash
-cd sessions/03-ingress
-kubectl apply -f subsessions/01-shared-config/
-kubectl apply -f subsessions/02-storageclass/
-kubectl apply -f subsessions/03-postgres-statefulset/
-kubectl apply -f subsessions/04-api-microservices/
-kubectl apply -f subsessions/05-frontend/
-kubectl apply -f subsessions/06-ingress/
-```
-
-Session 04 covers Horizontal Pod Autoscaler and Vertical Pod Autoscaler:
-
-```bash
-cd sessions/04-hpa-vpa
-kubectl apply -f subsessions/01-prerequisites-and-namespace/
-kubectl apply -f subsessions/02-hpa-cpu-autoscaling/01-cpu-demo-deployment.yml
-kubectl apply -f subsessions/02-hpa-cpu-autoscaling/02-cpu-demo-hpa.yml
-kubectl apply -f subsessions/02-hpa-cpu-autoscaling/03-load-generator.yml
-```
-
-For the dynamic EBS StorageClass examples in Sessions 02-03, the cluster needs
-the Amazon EBS CSI driver installed. For Session 03 on EKS, the cluster also
-needs the AWS Load Balancer Controller installed because the Ingress uses
-`ingressClassName: alb` by default. If you choose an optional Ingress controller
-path, install that controller and confirm the expected `IngressClass` exists
-before applying its optional manifest.
-
-For Session 04, the cluster needs Metrics Server for HPA and VPA resource
-metrics. VPA is installed separately before running the VPA sub-session.
-
-Session 05 covers production scaling patterns, including memory HPA, custom and
-external metric HPA, ResourceQuota, LimitRange, PodDisruptionBudget, Cluster
-Autoscaler, Karpenter, and EKS Auto Mode:
-
-```bash
-cd sessions/05-production-scaling
-kubectl apply -f subsessions/01-resource-guardrails/
-kubectl apply -f subsessions/02-memory-hpa/
-```
-
-Run the custom metrics, VPA safety, and node autoscaling sub-sessions only after
-their required adapters, CRDs, or EKS node scaling mode are available.
-
-Session 06 covers DaemonSets, the difference between DaemonSets and
-Deployments, and how both run together in the same cluster:
-
-```bash
-cd sessions/06-daemonsets
-kubectl apply -f subsessions/01-prerequisites-and-namespace/
-kubectl apply -f subsessions/02-daemonset-basics/
-kubectl apply -f subsessions/03-deployment-and-daemonset-mix/
-```
-
-Session 07 covers Argo CD and the GitOps deployment workflow:
-
-```bash
-cd sessions/07-argocd
-kubectl apply -f subsessions/01-prerequisites-and-install/01-argocd-namespace.yml
-kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-```
-
-After the Argo CD Pods are ready, create a GitHub repository with the sample
-Kubernetes YAML from `sessions/07-argocd/subsessions/02-create-github-repository/`,
-create a small Argo CD project boundary, and create the application from the
-Argo CD UI. The cluster needs outbound access to GitHub for this session.
-
-Session 08 covers Kubernetes RBAC, including ServiceAccounts, Roles,
-RoleBindings, ClusterRoles, ClusterRoleBindings, and `kubectl auth can-i`
-permission checks:
-
-```bash
-cd sessions/08-rbac
-kubectl apply -f subsessions/01-prerequisites-and-namespace/
-kubectl apply -f subsessions/02-service-accounts-and-deny-by-default/
-kubectl apply -f subsessions/03-namespace-role-and-rolebinding/
-kubectl apply -f subsessions/04-clusterrole-with-rolebinding/
-kubectl apply -f subsessions/05-clusterrolebinding-for-cluster-scope/
-```
-
-This session uses ServiceAccount impersonation checks such as
-`kubectl auth can-i --as=system:serviceaccount:rbac-lab:dev-reader` to show
-exactly which permissions were granted and which permissions remain denied.
-
-Session 09 covers Kubernetes CNI and networking from Linux fundamentals to
-eBPF-based dataplanes. It includes network namespaces, veth pairs, bridges,
-routing, overlays, IPAM, CNI plugin flow, EKS AWS VPC CNI, NetworkPolicy,
-Calico, Cilium, Multus, limitations, and troubleshooting:
-
-```bash
-cd sessions/09-cni-networking
-kubectl apply -f subsessions/06-network-policy/01-namespace.yml
-kubectl apply -f subsessions/06-network-policy/02-connectivity-demo.yml
-```
-
-The runnable lab is intentionally limited to safe application connectivity and
-NetworkPolicy practice. CNI replacement and eBPF install examples are included
-as guided discussion material and should be tested only on disposable clusters.
+- Dynamic EBS StorageClass examples need the Amazon EBS CSI driver.
+- Session 08 uses AWS Load Balancer Controller for the default ALB Ingress path.
+- Session 12 needs Metrics Server for HPA and VPA resource metrics.
+- Session 13 needs EKS Auto Mode, Karpenter, or Cluster Autoscaler for live node scaling.
+- Session 23 needs outbound access to GitHub.
 
 ## Delete The EKS Cluster
 

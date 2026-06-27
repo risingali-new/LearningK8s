@@ -1,0 +1,5 @@
+apiVersion: v2
+name: message-board
+version: 0.1.0
+appVersion: "1.0"
+description: Helm chart for the Batch 16A message-board application.
