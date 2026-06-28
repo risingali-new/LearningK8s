@@ -160,12 +160,222 @@ This script:
 - Creates or updates the EKS Pod Identity association.
 - Applies the Namespace and ServiceAccount manifest.
 
+### Manual AWS CLI Path For Step 2
+
+The script is the repeatable path. For learning, run the AWS CLI commands one
+by one. These are the exact AWS CLI calls, not another helper script. If you
+use PowerShell, run each multi-line command on one line or replace `\` with
+PowerShell line continuation.
+
+In the examples below, replace these values before running the commands:
+
+```text
+111122223333          -> your AWS account ID
+demo-batch16a         -> your EKS cluster name
+us-east-2             -> your AWS region
+my-training-bucket    -> your existing S3 bucket
+```
+
+First, discover the account ID and check that the bucket exists:
+
+```bash
+aws sts get-caller-identity \
+  --query Account \
+  --output text
+
+aws s3api head-bucket \
+  --bucket my-training-bucket
+```
+
+Make sure the Kubernetes identity exists:
+
+```bash
+kubectl apply -f 01-namespace-and-serviceaccount.yml
+kubectl get serviceaccount s3-client -n case-s3-access
+```
+
+Check whether the EKS Pod Identity Agent add-on is already installed:
+
+```bash
+aws eks describe-addon \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --addon-name eks-pod-identity-agent
+```
+
+If the add-on does not exist, create it and wait for it to become active:
+
+```bash
+aws eks create-addon \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --addon-name eks-pod-identity-agent
+
+aws eks wait addon-active \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --addon-name eks-pod-identity-agent
+```
+
+Create a file named `pod-identity-trust-policy.manual.json`. This policy says
+that the EKS Pod Identity service may assume the role only for this cluster,
+Namespace, and ServiceAccount:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowEksPodIdentityForSpecificWorkload",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "pods.eks.amazonaws.com"
+      },
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/eks-cluster-name": "demo-batch16a",
+          "aws:RequestTag/kubernetes-namespace": "case-s3-access",
+          "aws:RequestTag/kubernetes-service-account": "s3-client"
+        }
+      }
+    }
+  ]
+}
+```
+
+Create the IAM Role:
+
+```bash
+aws iam create-role \
+  --role-name EksPodS3CaseStudyRole \
+  --assume-role-policy-document file://pod-identity-trust-policy.manual.json \
+  --description "Case study role for EKS Pod access to S3 prefix"
+```
+
+If the role already exists, update only the trust policy:
+
+```bash
+aws iam update-assume-role-policy \
+  --role-name EksPodS3CaseStudyRole \
+  --policy-document file://pod-identity-trust-policy.manual.json
+```
+
+Create a file named `s3-prefix-access-policy.manual.json`. This is the
+least-privilege S3 policy for one bucket prefix:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListOnlyTheApplicationPrefix",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::my-training-bucket",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "pod-identity-check",
+            "pod-identity-check/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteOnlyTheApplicationPrefix",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::my-training-bucket/pod-identity-check/*"
+    }
+  ]
+}
+```
+
+Attach the policy to the role:
+
+```bash
+aws iam put-role-policy \
+  --role-name EksPodS3CaseStudyRole \
+  --policy-name S3CaseStudyBucketAccess \
+  --policy-document file://s3-prefix-access-policy.manual.json
+```
+
+Create the Pod Identity association. This is the EKS-side link between the
+Kubernetes ServiceAccount and the IAM Role:
+
+```bash
+aws eks create-pod-identity-association \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --namespace case-s3-access \
+  --service-account s3-client \
+  --role-arn arn:aws:iam::111122223333:role/EksPodS3CaseStudyRole
+```
+
+If the association already exists, list it and update the role ARN:
+
+```bash
+aws eks list-pod-identity-associations \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --namespace case-s3-access \
+  --service-account s3-client
+
+aws eks update-pod-identity-association \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --association-id a-replace-with-association-id \
+  --role-arn arn:aws:iam::111122223333:role/EksPodS3CaseStudyRole
+```
+
+Verify the association:
+
+```bash
+aws eks describe-pod-identity-association \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --association-id a-replace-with-association-id \
+  --query 'association.{namespace:namespace,serviceAccount:serviceAccount,roleArn:roleArn}' \
+  --output table
+```
+
 ## Step 3: Run The Pod Access Check
 
 Run the test Job:
 
 ```bash
 bash scripts/02-run-s3-access-check.sh
+```
+
+Manual path without the helper script:
+
+1. Create a local copy of `02-s3-access-check-job.yml`.
+2. In the copy, replace `REPLACE_WITH_AWS_REGION` with your AWS region.
+3. In the copy, replace `REPLACE_WITH_BUCKET_NAME` with your S3 bucket name.
+4. If you changed the prefix, replace `pod-identity-check` with that prefix.
+5. Apply, wait, and read the logs:
+
+```bash
+kubectl delete job s3-access-check \
+  -n case-s3-access \
+  --ignore-not-found
+
+kubectl apply -f 02-s3-access-check-job.local.yml
+
+kubectl wait \
+  --for=condition=complete \
+  job/s3-access-check \
+  -n case-s3-access \
+  --timeout=180s
+
+kubectl logs job/s3-access-check -n case-s3-access
 ```
 
 The Job uses the `s3-client` ServiceAccount and runs these checks from inside
@@ -194,6 +404,29 @@ Run the deny-check Job:
 
 ```bash
 bash scripts/03-run-s3-deny-check.sh
+```
+
+Manual path without the helper script:
+
+1. Create a local copy of `03-s3-deny-check-job.yml`.
+2. In the copy, replace `REPLACE_WITH_AWS_REGION` with your AWS region.
+3. In the copy, replace `REPLACE_WITH_BUCKET_NAME` with your S3 bucket name.
+4. Apply, wait, and read the logs:
+
+```bash
+kubectl delete job s3-deny-check \
+  -n case-s3-access \
+  --ignore-not-found
+
+kubectl apply -f 03-s3-deny-check-job.local.yml
+
+kubectl wait \
+  --for=condition=complete \
+  job/s3-deny-check \
+  -n case-s3-access \
+  --timeout=180s
+
+kubectl logs job/s3-deny-check -n case-s3-access
 ```
 
 The Job uses the same ServiceAccount, but tries to write outside the allowed

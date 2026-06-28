@@ -174,6 +174,14 @@ kubectl describe rolebinding team-a-developers-namespace-developer -n case-team-
 The `iam/` folder contains readable templates. The script below generates
 filled JSON from your environment variables and applies it with the AWS CLI.
 
+If Bash fails with `set: pipefail: invalid option name`, the script was
+probably saved with Windows line endings in your shell environment. Convert it
+once, then run it again:
+
+```bash
+sed -i 's/\r$//' scripts/*.sh
+```
+
 Run this as an AWS admin identity:
 
 ```bash
@@ -186,6 +194,156 @@ This creates or updates:
 - The role permission policy for `eks:DescribeCluster`.
 - The IAM user inline policy for `sts:AssumeRole`.
 - The EKS access entry that maps the role to the Kubernetes group.
+
+### Manual AWS CLI Path For Step 2
+
+The script is useful for repeat runs, but do the first run manually so the IAM
+and EKS boundary is clear. These are the exact AWS CLI calls, not another
+helper script. If you use PowerShell, run each multi-line command on one line
+or replace `\` with PowerShell line continuation.
+
+In the examples below, replace these values before running the commands:
+
+```text
+111122223333      -> your AWS account ID
+alice             -> the existing IAM user name
+demo-batch16a     -> your EKS cluster name
+us-east-2         -> your AWS region
+```
+
+First, discover the account and IAM user ARN:
+
+```bash
+aws sts get-caller-identity \
+  --query Account \
+  --output text
+
+aws iam get-user \
+  --user-name alice \
+  --query 'User.Arn' \
+  --output text
+```
+
+Create a file named `role-trust-policy.manual.json`. This policy says which
+human IAM user is allowed to assume the namespace access role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowSpecificIamUserToAssumeRole",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::111122223333:user/alice"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+Create the IAM Role:
+
+```bash
+aws iam create-role \
+  --role-name EksCaseTeamANamespaceRole \
+  --assume-role-policy-document file://role-trust-policy.manual.json \
+  --description "Namespace access role for case-team-a in demo-batch16a"
+```
+
+If the role already exists, update only the trust policy:
+
+```bash
+aws iam update-assume-role-policy \
+  --role-name EksCaseTeamANamespaceRole \
+  --policy-document file://role-trust-policy.manual.json
+```
+
+Create a file named `role-describe-cluster-policy.manual.json`. This lets the
+assumed role discover only this EKS cluster endpoint and certificate authority:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowDescribeOnlyThisEksCluster",
+      "Effect": "Allow",
+      "Action": "eks:DescribeCluster",
+      "Resource": "arn:aws:eks:us-east-2:111122223333:cluster/demo-batch16a"
+    }
+  ]
+}
+```
+
+Attach that permission as an inline role policy:
+
+```bash
+aws iam put-role-policy \
+  --role-name EksCaseTeamANamespaceRole \
+  --policy-name EKSDescribeClusterForKubectl \
+  --policy-document file://role-describe-cluster-policy.manual.json
+```
+
+Create a file named `user-assume-role-policy.manual.json`. This gives the IAM
+user permission to request the role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowAssumeNamespaceAccessRole",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::111122223333:role/EksCaseTeamANamespaceRole"
+    }
+  ]
+}
+```
+
+Attach that permission to the IAM user:
+
+```bash
+aws iam put-user-policy \
+  --user-name alice \
+  --policy-name AllowAssumeEksCaseTeamANamespaceRole \
+  --policy-document file://user-assume-role-policy.manual.json
+```
+
+Create the EKS access entry. This is where the AWS role becomes a Kubernetes
+principal with the group `eks-case-team-a-developers`:
+
+```bash
+aws eks create-access-entry \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --principal-arn arn:aws:iam::111122223333:role/EksCaseTeamANamespaceRole \
+  --type STANDARD \
+  --kubernetes-groups eks-case-team-a-developers
+```
+
+If the access entry already exists, update the Kubernetes group mapping:
+
+```bash
+aws eks update-access-entry \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --principal-arn arn:aws:iam::111122223333:role/EksCaseTeamANamespaceRole \
+  --kubernetes-groups eks-case-team-a-developers
+```
+
+Verify what EKS has stored:
+
+```bash
+aws eks describe-access-entry \
+  --cluster-name demo-batch16a \
+  --region us-east-2 \
+  --principal-arn arn:aws:iam::111122223333:role/EksCaseTeamANamespaceRole \
+  --query 'accessEntry.{principalArn:principalArn,kubernetesGroups:kubernetesGroups}' \
+  --output table
+```
 
 ## Step 3: Prove The RBAC Shape Before The User Logs In
 
@@ -248,6 +406,50 @@ kubectl auth can-i list pods -n default
 
 kubectl auth can-i list nodes
   -> no
+```
+
+Manual AWS CLI path without the test script:
+
+1. Configure the IAM user's normal access keys in a source profile:
+
+```bash
+aws configure --profile base-iam-user
+```
+
+2. Configure a second profile that assumes the namespace role:
+
+```bash
+aws configure set profile.team-a-namespace.role_arn \
+  arn:aws:iam::111122223333:role/EksCaseTeamANamespaceRole
+
+aws configure set profile.team-a-namespace.source_profile base-iam-user
+
+aws configure set profile.team-a-namespace.region us-east-2
+```
+
+3. Confirm that the profile resolves to the role, not the IAM user:
+
+```bash
+aws sts get-caller-identity --profile team-a-namespace
+```
+
+4. Build a kubeconfig context that uses that profile:
+
+```bash
+aws eks update-kubeconfig \
+  --name demo-batch16a \
+  --region us-east-2 \
+  --alias demo-batch16a-team-a \
+  --profile team-a-namespace
+```
+
+5. Run the same allow and deny checks manually:
+
+```bash
+kubectl --context demo-batch16a-team-a get pods -n case-team-a
+kubectl --context demo-batch16a-team-a auth can-i patch deployments.apps -n case-team-a
+kubectl --context demo-batch16a-team-a auth can-i list pods -n default
+kubectl --context demo-batch16a-team-a auth can-i list nodes
 ```
 
 For day-to-day use, configure an AWS profile that assumes the role:
