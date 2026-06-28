@@ -1,9 +1,9 @@
 import os
 
 import psycopg2
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, flash, jsonify, redirect, render_template, request, url_for
 
-from database import create_message, delete_message, ensure_schema, get_connection, list_messages
+from database import count_messages, create_message, delete_message, ensure_schema, get_connection, list_messages
 
 
 app = Flask(__name__)
@@ -79,6 +79,32 @@ def readyz():
         return jsonify(service="monolith", status="ready")
     except psycopg2.Error:
         return jsonify(service="monolith", status="not-ready"), 503
+
+
+@app.get("/metrics")
+def metrics():
+    database_available = 1
+    message_count = 0
+
+    try:
+        message_count = count_messages()
+    except psycopg2.Error:
+        database_available = 0
+
+    body = "\n".join(
+        [
+            "# HELP message_board_service_info Service process information.",
+            "# TYPE message_board_service_info gauge",
+            'message_board_service_info{service="monolith"} 1',
+            "# HELP message_board_database_available Database readiness status.",
+            "# TYPE message_board_database_available gauge",
+            f'message_board_database_available{{service="monolith"}} {database_available}',
+            "# HELP message_board_messages_current Current message count.",
+            "# TYPE message_board_messages_current gauge",
+            f'message_board_messages_current{{service="monolith"}} {message_count}',
+        ]
+    )
+    return Response(f"{body}\n", mimetype="text/plain; version=0.0.4")
 
 
 ensure_schema()

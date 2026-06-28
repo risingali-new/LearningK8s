@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: missing-storageclass-demo
+  namespace: troubleshooting-lab
+spec:
+  storageClassName: storage-class-that-does-not-exist
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

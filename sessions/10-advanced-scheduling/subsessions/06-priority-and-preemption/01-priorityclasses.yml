@@ -1,0 +1,16 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: lab-low-priority
+value: 1000
+globalDefault: false
+description: Low priority class for scheduling demonstrations.
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: lab-high-priority
+value: 10000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: Higher priority class for scheduling demonstrations.

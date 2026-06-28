@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board
+  namespace: rollout-lab
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:missing-tag

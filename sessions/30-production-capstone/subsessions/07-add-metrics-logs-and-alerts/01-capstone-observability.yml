@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: message-board-frontend
+  namespace: message-board-prod
+  labels:
+    app: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: message-board-alerts
+  namespace: message-board-prod
+spec:
+  groups:
+    - name: message-board.availability
+      rules:
+        - alert: MessageBoardFrontendUnavailable
+          expr: kube_deployment_status_replicas_available{namespace="message-board-prod",deployment="frontend"} < 1
+          for: 5m
+          labels:
+            severity: page
+          annotations:
+            summary: Message board frontend has no available replicas.
+            description: The frontend Deployment has reported zero available replicas for five minutes.

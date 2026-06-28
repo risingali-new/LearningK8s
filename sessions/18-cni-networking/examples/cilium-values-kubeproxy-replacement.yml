@@ -1,0 +1,13 @@
+kubeProxyReplacement: true
+k8sServiceHost: "<api-server-host>"
+k8sServicePort: "443"
+ipam:
+  mode: kubernetes
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+operator:
+  replicas: 1

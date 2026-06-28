@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: supply-chain-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board-signed-image
+  namespace: supply-chain-lab
+  annotations:
+    cosign.sigstore.dev/imageRef: prashantdey/appk8stutorial@sha256:<replace-with-real-digest>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-board-signed-image
+  template:
+    metadata:
+      labels:
+        app: message-board-signed-image
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial@sha256:<replace-with-real-digest>
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////tmp/messages.db

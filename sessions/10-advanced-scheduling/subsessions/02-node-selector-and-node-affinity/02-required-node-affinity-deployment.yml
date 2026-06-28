@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: required-affinity-demo
+  namespace: scheduling-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: required-affinity-demo
+  template:
+    metadata:
+      labels:
+        app: required-affinity-demo
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: training.k8s.io/node-role
+                    operator: In
+                    values:
+                      - scheduling-lab
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

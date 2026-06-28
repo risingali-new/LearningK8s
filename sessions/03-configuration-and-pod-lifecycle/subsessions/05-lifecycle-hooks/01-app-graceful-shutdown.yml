@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-board-lifecycle
+  namespace: lifecycle-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-board-lifecycle
+  template:
+    metadata:
+      labels:
+        app: message-board-lifecycle
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:1.0
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////tmp/messages.db
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "echo draining app traffic; sleep 10"]

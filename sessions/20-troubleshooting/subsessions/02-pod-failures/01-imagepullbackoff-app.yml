@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: troubleshooting-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-image-app
+  namespace: troubleshooting-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-image-app
+  template:
+    metadata:
+      labels:
+        app: broken-image-app
+    spec:
+      containers:
+        - name: app
+          image: prashantdey/appk8stutorial:not-a-real-tag
+          ports:
+            - containerPort: 5000

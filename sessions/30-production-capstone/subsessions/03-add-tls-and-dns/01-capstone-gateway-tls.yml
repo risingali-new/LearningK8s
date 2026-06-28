@@ -1,0 +1,48 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: message-board
+  namespace: message-board-prod
+spec:
+  gatewayClassName: alb
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: message-board.example.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: message-board-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: message-board
+  namespace: message-board-prod
+spec:
+  parentRefs:
+    - name: message-board
+  hostnames:
+    - message-board.example.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: frontend
+          port: 80
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: message-board-tls
+  namespace: message-board-prod
+spec:
+  secretName: message-board-tls
+  dnsNames:
+    - message-board.example.com
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

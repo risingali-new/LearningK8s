@@ -1,0 +1,12 @@
+apiVersion: projectcalico.org/v3
+kind: IPPool
+metadata:
+  name: training-bgp-pool
+spec:
+  cidr: 10.10.0.0/16
+  blockSize: 26
+  vxlanMode: Never
+  ipipMode: Never
+  natOutgoing: true
+  disabled: false
+  nodeSelector: all()

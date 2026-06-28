@@ -1,0 +1,5 @@
+resources:
+  - ../../02-create-base/base
+namePrefix: dev-
+patches:
+  - path: replica-patch.yaml
