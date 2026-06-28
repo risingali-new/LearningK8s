@@ -174,6 +174,14 @@ kubectl describe rolebinding team-a-developers-namespace-developer -n case-team-
 The `iam/` folder contains readable templates. The script below generates
 filled JSON from your environment variables and applies it with the AWS CLI.
 
+If Bash fails with `set: pipefail: invalid option name`, the script was
+probably saved with Windows line endings in your shell environment. Convert it
+once, then run it again:
+
+```bash
+sed -i 's/\r$//' scripts/*.sh
+```
+
 Run this as an AWS admin identity:
 
 ```bash
